@@ -8,7 +8,7 @@ pub struct Cli {
     #[arg(
         long,
         env = "LAZYNIXOS_FLAKE",
-        default_value = "/home/freeman.xiong/dotfiles"
+        default_value = "."
     )]
     pub flake: PathBuf,
 }
