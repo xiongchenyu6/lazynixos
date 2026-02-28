@@ -8,9 +8,9 @@ use clap::Parser;
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
     execute,
-    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use ratatui::{Terminal, backend::CrosstermBackend};
+use ratatui::{backend::CrosstermBackend, Terminal};
 use std::time::Duration;
 use tokio::sync::mpsc;
 
@@ -50,7 +50,8 @@ async fn main() -> anyhow::Result<()> {
         terminal.draw(|f| ui::render(f, &app))?;
 
         if event::poll(Duration::from_millis(50))? {
-            if let Event::Key(key) = event::read()? {
+            let event = event::read()?;
+            if let Event::Key(key) = event {
                 match key.code {
                     KeyCode::Char('q') | KeyCode::Esc => {
                         app.should_quit = true;
@@ -59,10 +60,11 @@ async fn main() -> anyhow::Result<()> {
                     KeyCode::Down | KeyCode::Char('j') => app.move_down(),
                     KeyCode::Enter => {
                         if app.can_start_action() {
-                            if let Some(host) = app.selected_host() {
+                            let host = app.selected_host().cloned();
+                            if let Some(h) = host {
                                 tokio::spawn(cmd::run_rebuild(
                                     cli.flake.clone(),
-                                    host.clone(),
+                                    h,
                                     RebuildAction::Switch,
                                     tx.clone(),
                                 ));
@@ -71,10 +73,11 @@ async fn main() -> anyhow::Result<()> {
                     }
                     KeyCode::Char('b') => {
                         if app.can_start_action() {
-                            if let Some(host) = app.selected_host() {
+                            let host = app.selected_host().cloned();
+                            if let Some(h) = host {
                                 tokio::spawn(cmd::run_rebuild(
                                     cli.flake.clone(),
-                                    host.clone(),
+                                    h,
                                     RebuildAction::Build,
                                     tx.clone(),
                                 ));
@@ -83,10 +86,11 @@ async fn main() -> anyhow::Result<()> {
                     }
                     KeyCode::Char('d') => {
                         if app.can_start_action() {
-                            if let Some(host) = app.selected_host() {
+                            let host = app.selected_host().cloned();
+                            if let Some(h) = host {
                                 tokio::spawn(cmd::run_rebuild(
                                     cli.flake.clone(),
-                                    host.clone(),
+                                    h,
                                     RebuildAction::DryBuild,
                                     tx.clone(),
                                 ));

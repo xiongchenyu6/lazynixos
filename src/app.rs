@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 
 use crate::types::{AppEvent, LogLine, RebuildAction};
 
@@ -6,10 +6,16 @@ pub struct App {
     pub hosts: Vec<String>,
     pub selected_host_index: usize,
     pub logs: VecDeque<LogLine>,
-    pub running_action: Option<(String, RebuildAction)>,
+    pub running_actions: HashMap<String, RebuildAction>,
     pub status_msg: String,
     pub error_msg: Option<String>,
     pub should_quit: bool,
+}
+
+impl Default for App {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl App {
@@ -18,7 +24,7 @@ impl App {
             hosts: Vec::new(),
             selected_host_index: 0,
             logs: VecDeque::new(),
-            running_action: None,
+            running_actions: HashMap::new(),
             status_msg: "Loading hosts...".to_string(),
             error_msg: None,
             should_quit: false,
@@ -58,27 +64,32 @@ impl App {
                 }
             }
             AppEvent::CommandStarted { host, action } => {
-                self.running_action = Some((host, action));
-                self.logs.clear();
-                self.status_msg = "Running...".to_string();
+                self.running_actions.insert(host.clone(), action);
+                self.status_msg = format!("Started on {}", host);
             }
-            AppEvent::CommandFinished { success, .. } => {
-                self.running_action = None;
+            AppEvent::CommandFinished { host, success, .. } => {
+                self.running_actions.remove(&host);
                 if success {
-                    self.status_msg = "Success".to_string();
+                    self.status_msg = format!("{} finished successfully", host);
                 } else {
-                    self.status_msg = "Failed".to_string();
+                    self.status_msg = format!("{} failed", host);
                 }
             }
-            AppEvent::CommandErrored { error, .. } => {
-                self.running_action = None;
-                self.error_msg = Some(error);
-                self.status_msg = "Failed to start".to_string();
+            AppEvent::CommandErrored { host, error, .. } => {
+                self.running_actions.remove(&host);
+                self.error_msg = Some(format!("{}: {}", host, error));
             }
         }
     }
 
     pub fn can_start_action(&self) -> bool {
-        self.running_action.is_none() && !self.hosts.is_empty()
+        if self.hosts.is_empty() {
+            return false;
+        }
+        if let Some(host) = self.selected_host() {
+            !self.running_actions.contains_key(host)
+        } else {
+            false
+        }
     }
 }

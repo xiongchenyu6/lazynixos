@@ -12,7 +12,14 @@ use crate::types::LogStream;
 pub fn render(f: &mut Frame, app: &App) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Min(0), Constraint::Length(1), Constraint::Length(1)].as_ref())
+        .constraints(
+            [
+                Constraint::Min(0),
+                Constraint::Length(1),
+                Constraint::Length(1),
+            ]
+            .as_ref(),
+        )
         .split(f.area());
 
     let top_chunks = Layout::default()
@@ -26,12 +33,21 @@ pub fn render(f: &mut Frame, app: &App) {
         .iter()
         .enumerate()
         .map(|(i, host)| {
-            let style = if i == app.selected_host_index {
+            let mut style = if i == app.selected_host_index {
                 Style::default().bg(Color::Blue).fg(Color::White)
             } else {
                 Style::default()
             };
-            ListItem::new(host.as_str()).style(style)
+
+            let mut display_text = host.clone();
+            if app.running_actions.contains_key(host) {
+                display_text = format!("{} [running]", host);
+                if i != app.selected_host_index {
+                    style = style.fg(Color::Magenta).add_modifier(Modifier::BOLD);
+                }
+            }
+
+            ListItem::new(display_text).style(style)
         })
         .collect();
 
@@ -71,12 +87,23 @@ pub fn render(f: &mut Frame, app: &App) {
 
     f.render_widget(logs_view, top_chunks[1]);
 
-    // Middle pane: Status
+    // Bottom pane 1: Status
     let status_text = if let Some(err) = &app.error_msg {
-        Span::styled(format!(" ERROR: {} ", err), Style::default().bg(Color::Red).fg(Color::White).add_modifier(Modifier::BOLD))
-    } else if let Some((host, action)) = &app.running_action {
         Span::styled(
-            format!(" RUNNING: {} on {} ", action, host),
+            format!(" ERROR: {} ", err),
+            Style::default()
+                .bg(Color::Red)
+                .fg(Color::White)
+                .add_modifier(Modifier::BOLD),
+        )
+    } else if !app.running_actions.is_empty() {
+        let running_hosts: Vec<String> = app.running_actions.keys().cloned().collect();
+        Span::styled(
+            format!(
+                " RUNNING ({}): {} ",
+                running_hosts.len(),
+                running_hosts.join(", ")
+            ),
             Style::default()
                 .bg(Color::Magenta)
                 .fg(Color::White)
@@ -85,27 +112,30 @@ pub fn render(f: &mut Frame, app: &App) {
     } else if !app.status_msg.is_empty() {
         Span::styled(
             format!(" {} ", app.status_msg),
-            Style::default().bg(Color::Green).fg(Color::Black),
+            Style::default()
+                .bg(Color::Green)
+                .fg(Color::Black)
+                .add_modifier(Modifier::BOLD),
         )
     } else {
-        Span::raw(" Idle ")
+        Span::styled(" Idle ", Style::default().fg(Color::DarkGray))
     };
 
     let status_bar = Paragraph::new(Line::from(status_text));
     f.render_widget(status_bar, chunks[1]);
 
-    // Bottom pane: Help
+    // Bottom pane 2: Help bar
     let help_spans = vec![
-        Span::styled("[↑/↓]", Style::default().fg(Color::DarkGray)),
-        Span::styled(" Navigate  ", Style::default().fg(Color::Gray)),
-        Span::styled("[Enter]", Style::default().fg(Color::Cyan)),
-        Span::styled(" Switch  ", Style::default().fg(Color::Gray)),
-        Span::styled("[b]", Style::default().fg(Color::Yellow)),
-        Span::styled(" Build  ", Style::default().fg(Color::Gray)),
-        Span::styled("[d]", Style::default().fg(Color::Yellow)),
-        Span::styled(" Dry-Build  ", Style::default().fg(Color::Gray)),
-        Span::styled("[q]", Style::default().fg(Color::Yellow)),
-        Span::styled(" Quit", Style::default().fg(Color::Gray)),
+        Span::styled("[↑/↓] ", Style::default().fg(Color::DarkGray)),
+        Span::styled("Navigate  ", Style::default().fg(Color::Gray)),
+        Span::styled("[Enter] ", Style::default().fg(Color::Cyan)),
+        Span::styled("Switch  ", Style::default().fg(Color::Gray)),
+        Span::styled("[b] ", Style::default().fg(Color::Yellow)),
+        Span::styled("Build  ", Style::default().fg(Color::Gray)),
+        Span::styled("[d] ", Style::default().fg(Color::Yellow)),
+        Span::styled("Dry-Build  ", Style::default().fg(Color::Gray)),
+        Span::styled("[q] ", Style::default().fg(Color::Yellow)),
+        Span::styled("Quit", Style::default().fg(Color::Gray)),
     ];
     let help_bar = Paragraph::new(Line::from(help_spans));
     f.render_widget(help_bar, chunks[2]);
