@@ -5,7 +5,7 @@ use crate::types::{AppEvent, LogLine, RebuildAction};
 pub struct App {
     pub hosts: Vec<String>,
     pub selected_host_index: usize,
-    pub logs: VecDeque<LogLine>,
+    pub host_logs: HashMap<String, VecDeque<LogLine>>,
     pub running_actions: HashMap<String, RebuildAction>,
     pub status_msg: String,
     pub error_msg: Option<String>,
@@ -23,7 +23,7 @@ impl App {
         Self {
             hosts: Vec::new(),
             selected_host_index: 0,
-            logs: VecDeque::new(),
+            host_logs: HashMap::new(),
             running_actions: HashMap::new(),
             status_msg: "Loading hosts...".to_string(),
             error_msg: None,
@@ -57,10 +57,11 @@ impl App {
                 self.error_msg = Some(e);
                 self.status_msg = String::new();
             }
-            AppEvent::Log(line) => {
-                self.logs.push_back(line);
-                if self.logs.len() > 1000 {
-                    self.logs.pop_front();
+            AppEvent::Log { host, line } => {
+                let logs = self.host_logs.entry(host).or_default();
+                logs.push_back(line);
+                if logs.len() > 1000 {
+                    logs.pop_front();
                 }
             }
             AppEvent::CommandStarted { host, action } => {
@@ -91,5 +92,10 @@ impl App {
         } else {
             false
         }
+    }
+
+    pub fn selected_host_logs(&self) -> Option<&VecDeque<LogLine>> {
+        self.selected_host()
+            .and_then(|host| self.host_logs.get(host))
     }
 }

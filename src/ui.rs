@@ -1,9 +1,9 @@
 use ratatui::{
-    Frame,
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, List, ListItem, Paragraph, Wrap},
+    Frame,
 };
 
 use crate::app::App;
@@ -58,9 +58,12 @@ pub fn render(f: &mut Frame, app: &App) {
     );
     f.render_widget(hosts_list, top_chunks[0]);
 
-    // Right pane: Logs
-    let log_lines: Vec<Line> = app
-        .logs
+    // Right pane: Logs (per-host)
+    let selected_host = app.selected_host();
+    let empty_logs = std::collections::VecDeque::new();
+    let logs = app.selected_host_logs().unwrap_or(&empty_logs);
+
+    let log_lines: Vec<Line> = logs
         .iter()
         .map(|log| {
             let style = match log.stream {
@@ -74,11 +77,16 @@ pub fn render(f: &mut Frame, app: &App) {
         })
         .collect();
 
+    let log_title = match selected_host {
+        Some(host) => format!(" Logs — {} ", host),
+        None => " Logs ".to_string(),
+    };
+
     let logs_view = Paragraph::new(log_lines)
-        .block(Block::default().borders(Borders::ALL).title(" Logs "))
+        .block(Block::default().borders(Borders::ALL).title(log_title))
         .wrap(Wrap { trim: false })
         .scroll((
-            (app.logs
+            (logs
                 .len()
                 .saturating_sub(top_chunks[1].height.saturating_sub(2) as usize))
                 as u16,

@@ -35,7 +35,10 @@ pub struct LogLine {
 #[derive(Debug, Clone, PartialEq)]
 pub enum AppEvent {
     HostsLoaded(Result<Vec<String>, String>),
-    Log(LogLine),
+    Log {
+        host: String,
+        line: LogLine,
+    },
     CommandStarted {
         host: String,
         action: RebuildAction,

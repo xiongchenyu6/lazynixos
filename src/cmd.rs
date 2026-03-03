@@ -81,27 +81,35 @@ pub async fn run_rebuild(
     let stderr = child.stderr.take().unwrap();
 
     let tx_stdout = tx.clone();
+    let host_stdout = host.clone();
     tokio::spawn(async move {
         let mut reader = BufReader::new(stdout).lines();
         while let Ok(Some(line)) = reader.next_line().await {
             let _ = tx_stdout
-                .send(AppEvent::Log(LogLine {
-                    stream: LogStream::Stdout,
-                    text: line,
-                }))
+                .send(AppEvent::Log {
+                    host: host_stdout.clone(),
+                    line: LogLine {
+                        stream: LogStream::Stdout,
+                        text: line,
+                    },
+                })
                 .await;
         }
     });
 
     let tx_stderr = tx.clone();
+    let host_stderr = host.clone();
     tokio::spawn(async move {
         let mut reader = BufReader::new(stderr).lines();
         while let Ok(Some(line)) = reader.next_line().await {
             let _ = tx_stderr
-                .send(AppEvent::Log(LogLine {
-                    stream: LogStream::Stderr,
-                    text: line,
-                }))
+                .send(AppEvent::Log {
+                    host: host_stderr.clone(),
+                    line: LogLine {
+                        stream: LogStream::Stderr,
+                        text: line,
+                    },
+                })
                 .await;
         }
     });
