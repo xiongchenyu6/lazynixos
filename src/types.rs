@@ -1,3 +1,5 @@
+use serde::Serialize;
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum RebuildAction {
     Switch,
@@ -48,4 +50,23 @@ pub enum AppEvent {
         action: RebuildAction,
         error: String,
     },
+}
+
+#[derive(Debug, Serialize)]
+pub struct ListOutput {
+    pub hosts: Vec<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct RebuildOutput {
+    pub host: String,
+    pub action: String,
+    pub success: bool,
+    pub logs: Vec<RebuildLogEntry>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct RebuildLogEntry {
+    pub stream: String,
+    pub text: String,
 }

@@ -46,26 +46,16 @@ cargo install --path .
 
 ## Usage
 
-Run `lazynixos` in the root of your NixOS flake directory.
+### Interactive TUI
+
+Run `lazynixos` in the root of your NixOS flake directory. With no subcommand, it launches the interactive TUI.
 
 ```bash
 lazynixos
+lazynixos tui
 ```
 
-### Configuration
-
-You can point to a specific flake path using the `--flake` flag or an environment variable:
-
-```bash
-# Using a flag
-lazynixos --flake /path/to/your/flake
-
-# Using an environment variable
-export LAZYNIXOS_FLAKE="/path/to/your/flake"
-lazynixos
-```
-
-### Keybindings
+#### TUI Keybindings
 
 | Key | Action |
 |-----|--------|
@@ -75,6 +65,40 @@ lazynixos
 | `b` | Run `nixos-rebuild build` |
 | `d` | Run `nixos-rebuild dry-build` |
 | `q` / `Esc` | Quit |
+
+### CLI Mode
+
+All CLI commands output JSON to stdout, making them suitable for scripting and AI agent integration.
+
+```bash
+# List all discovered hosts
+lazynixos list
+# {"hosts": ["desktop", "server", "laptop"]}
+
+# Deploy a specific host
+lazynixos rebuild myhost switch
+lazynixos rebuild myhost build
+lazynixos rebuild myhost dry-build
+
+# Point to a specific flake
+lazynixos --flake /path/to/flake list
+lazynixos --flake /path/to/flake rebuild myhost switch
+```
+
+Build logs stream to stderr in real-time. The final JSON result is printed to stdout on completion, including success status and full log history.
+
+### Configuration
+
+You can point to a specific flake path using the `--flake` flag or an environment variable:
+
+```bash
+# Using a flag
+lazynixos --flake /path/to/your/flake list
+
+# Using an environment variable
+export LAZYNIXOS_FLAKE="/path/to/your/flake"
+lazynixos list
+```
 
 ## Contributing
 
