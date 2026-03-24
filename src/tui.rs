@@ -1,9 +1,9 @@
 use crossterm::{
-    event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
+    event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, MouseEventKind},
     execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
-use ratatui::{backend::CrosstermBackend, Terminal};
+use ratatui::{Terminal, backend::CrosstermBackend};
 use std::path::PathBuf;
 use std::time::Duration;
 use tokio::sync::mpsc;
@@ -41,14 +41,19 @@ pub async fn run(flake_dir: PathBuf) -> anyhow::Result<()> {
         terminal.draw(|f| ui::render(f, &app))?;
 
         if event::poll(Duration::from_millis(50))? {
+            let log_viewport_height = terminal.size()?.height.saturating_sub(4);
             let event = event::read()?;
-            if let Event::Key(key) = event {
-                match key.code {
+            match event {
+                Event::Key(key) => match key.code {
                     KeyCode::Char('q') | KeyCode::Esc => {
                         app.should_quit = true;
                     }
                     KeyCode::Up | KeyCode::Char('k') => app.move_up(),
                     KeyCode::Down | KeyCode::Char('j') => app.move_down(),
+                    KeyCode::PageUp => app.scroll_logs_up(log_viewport_height, 10),
+                    KeyCode::PageDown => app.scroll_logs_down(log_viewport_height, 10),
+                    KeyCode::Home => app.scroll_logs_to_top(log_viewport_height),
+                    KeyCode::End => app.scroll_logs_to_bottom(),
                     KeyCode::Enter => {
                         if app.can_start_action() {
                             let host = app.selected_host().cloned();
@@ -89,7 +94,13 @@ pub async fn run(flake_dir: PathBuf) -> anyhow::Result<()> {
                         }
                     }
                     _ => {}
-                }
+                },
+                Event::Mouse(mouse) => match mouse.kind {
+                    MouseEventKind::ScrollUp => app.scroll_logs_up(log_viewport_height, 3),
+                    MouseEventKind::ScrollDown => app.scroll_logs_down(log_viewport_height, 3),
+                    _ => {}
+                },
+                _ => {}
             }
         }
 

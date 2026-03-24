@@ -6,6 +6,8 @@
 
 A fast, modern TUI for managing and deploying NixOS flake configurations. Heavily inspired by the workflow of `lazygit`.
 
+![lazynixos screenshot](assets/screenshot.png)
+
 ## Why lazynixos?
 
 Managing multiple NixOS hosts in a flake can get messy. You often find yourself typing long `nixos-rebuild` commands or forgetting which hosts you've defined. 
@@ -61,6 +63,9 @@ lazynixos tui
 |-----|--------|
 | `↑` / `k` | Move selection up |
 | `↓` / `j` | Move selection down |
+| `PgUp` / `PgDn` | Scroll the selected host's logs |
+| `Home` / `End` | Jump to the top or bottom of the logs |
+| Mouse wheel | Scroll the selected host's logs |
 | `Enter` | Run `nixos-rebuild switch` |
 | `b` | Run `nixos-rebuild build` |
 | `d` | Run `nixos-rebuild dry-build` |

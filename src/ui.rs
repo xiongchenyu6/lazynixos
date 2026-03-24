@@ -1,9 +1,9 @@
 use ratatui::{
+    Frame,
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, List, ListItem, Paragraph, Wrap},
-    Frame,
 };
 
 use crate::app::App;
@@ -86,10 +86,7 @@ pub fn render(f: &mut Frame, app: &App) {
         .block(Block::default().borders(Borders::ALL).title(log_title))
         .wrap(Wrap { trim: false })
         .scroll((
-            (logs
-                .len()
-                .saturating_sub(top_chunks[1].height.saturating_sub(2) as usize))
-                as u16,
+            app.current_log_scroll(top_chunks[1].height.saturating_sub(2)),
             0,
         ));
 
@@ -136,6 +133,8 @@ pub fn render(f: &mut Frame, app: &App) {
     let help_spans = vec![
         Span::styled("[↑/↓] ", Style::default().fg(Color::DarkGray)),
         Span::styled("Navigate  ", Style::default().fg(Color::Gray)),
+        Span::styled("[PgUp/PgDn] ", Style::default().fg(Color::DarkGray)),
+        Span::styled("Logs  ", Style::default().fg(Color::Gray)),
         Span::styled("[Enter] ", Style::default().fg(Color::Cyan)),
         Span::styled("Switch  ", Style::default().fg(Color::Gray)),
         Span::styled("[b] ", Style::default().fg(Color::Yellow)),
