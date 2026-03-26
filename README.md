@@ -6,7 +6,7 @@
 
 A fast, modern TUI for managing and deploying NixOS flake configurations. Heavily inspired by the workflow of `lazygit`.
 
-![lazynixos screenshot](assets/screenshot.png)
+![lazynixos screenshot](assets/20260326-171509_screenshot.png)
 
 ## Why lazynixos?
 

@@ -1,5 +1,7 @@
 use std::collections::{HashMap, VecDeque};
 
+use ratatui_image::protocol::StatefulProtocol;
+
 use crate::types::{AppEvent, LogLine, RebuildAction};
 
 pub struct App {
@@ -12,6 +14,7 @@ pub struct App {
     pub log_scroll: usize,
     pub follow_logs: bool,
     pub should_quit: bool,
+    pub image_state: Option<StatefulProtocol>,
 }
 
 impl Default for App {
@@ -32,6 +35,7 @@ impl App {
             log_scroll: 0,
             follow_logs: true,
             should_quit: false,
+            image_state: None,
         }
     }
 
@@ -50,6 +54,49 @@ impl App {
         if !self.hosts.is_empty() && self.selected_host_index < self.hosts.len() - 1 {
             self.selected_host_index += 1;
             self.reset_log_scroll();
+        }
+    }
+
+    pub fn select_host(&mut self, index: usize) {
+        if index < self.hosts.len() && index != self.selected_host_index {
+            self.selected_host_index = index;
+            self.reset_log_scroll();
+        }
+    }
+
+    /// Handle a left click in the hosts list area.
+    /// `list_area` is the full block area of the hosts list widget.
+    /// `click_x`, `click_y` are the absolute terminal coordinates of the click.
+    pub fn handle_hosts_click(
+        &mut self,
+        click_x: u16,
+        click_y: u16,
+        list_area: ratatui::layout::Rect,
+    ) {
+        if self.hosts.is_empty() {
+            return;
+        }
+
+        // Inside block borders?
+        if click_x <= list_area.x
+            || click_x >= list_area.x + list_area.width - 1
+            || click_y <= list_area.y
+            || click_y >= list_area.y + list_area.height - 1
+        {
+            return;
+        }
+
+        let inner_height = list_area.height.saturating_sub(2) as usize;
+        let local_y = (click_y - list_area.y - 1) as usize;
+        let offset = if self.hosts.len() > inner_height {
+            self.hosts.len() - inner_height
+        } else {
+            0
+        };
+        let index = local_y + offset;
+
+        if index < self.hosts.len() {
+            self.select_host(index);
         }
     }
 
