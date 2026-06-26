@@ -14,6 +14,11 @@ Managing multiple NixOS hosts in a flake can get messy. You often find yourself 
 
 `lazynixos` solves this by giving you a clear, interactive interface. It discovers your configurations instantly and lets you deploy them with a single keystroke. You don't have to wait for the UI to respond while a build is running. Everything happens in the background, and you see the logs live in your terminal.
 
+The TUI also shows the exact command being executed for the selected host, such as:
+```bash
+nixos-rebuild switch --flake .#oracle-amd-002 --use-substitutes --target-host root@oracle-amd-002 --impure
+```
+
 ## Features
 
 - **Instant Discovery**: Automatically parses `nixosConfigurations` from your local `flake.nix` using `nix eval`.
@@ -21,6 +26,12 @@ Managing multiple NixOS hosts in a flake can get messy. You often find yourself 
 - **Non-blocking UI**: Built with `tokio` and `ratatui`. Shell commands run asynchronously so the interface stays snappy.
 - **Interactive Deployments**: Select a host and trigger actions immediately.
 - **Lightweight**: Written in Rust for maximum performance and minimal overhead.
+
+## Requirements
+
+- **[Nix](https://nixos.org/download) with flakes enabled** (`experimental-features = nix-command flakes`). `lazynixos` shells out to `nix eval` to discover hosts.
+- **`nixos-rebuild` on your `PATH`** — preinstalled on NixOS, or available elsewhere via `nix profile install nixpkgs#nixos-rebuild`.
+- **SSH access as `root` to each target host.** Deployments run against `root@<hostname>` (with `--use-substitutes` and `--impure`), so each configuration name must be reachable over SSH by that name.
 
 ## Installation
 
@@ -103,6 +114,25 @@ lazynixos --flake /path/to/your/flake list
 # Using an environment variable
 export LAZYNIXOS_FLAKE="/path/to/your/flake"
 lazynixos list
+```
+
+## Development
+
+The repo ships a Nix flake dev shell with the full Rust toolchain (`cargo`, `rustc`, `rustfmt`, `clippy`, `rust-analyzer`):
+
+```bash
+nix develop          # or `direnv allow` if you use direnv
+```
+
+Common tasks:
+
+```bash
+cargo run            # launch the TUI against the flake in the current directory
+cargo run -- list    # exercise the CLI
+cargo test           # run the unit tests
+cargo fmt            # format
+cargo clippy         # lint
+nix build            # build the release package via the flake
 ```
 
 ## Contributing
