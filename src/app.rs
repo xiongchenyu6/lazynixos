@@ -4,11 +4,16 @@ use ratatui_image::protocol::StatefulProtocol;
 
 use crate::types::{AppEvent, LogLine, RebuildAction};
 
+pub struct RunningAction {
+    pub action: RebuildAction,
+    pub command: String,
+}
+
 pub struct App {
     pub hosts: Vec<String>,
     pub selected_host_index: usize,
     pub host_logs: HashMap<String, VecDeque<LogLine>>,
-    pub running_actions: HashMap<String, RebuildAction>,
+    pub running_actions: HashMap<String, RunningAction>,
     pub status_msg: String,
     pub error_msg: Option<String>,
     pub log_scroll: usize,
@@ -123,8 +128,13 @@ impl App {
                     }
                 }
             }
-            AppEvent::CommandStarted { host, action } => {
-                self.running_actions.insert(host.clone(), action);
+            AppEvent::CommandStarted {
+                host,
+                action,
+                command,
+            } => {
+                self.running_actions
+                    .insert(host.clone(), RunningAction { action, command });
                 self.status_msg = format!("Started on {}", host);
             }
             AppEvent::CommandFinished { host, success, .. } => {
@@ -223,7 +233,7 @@ impl App {
 #[cfg(test)]
 mod tests {
     use super::App;
-    use crate::types::{AppEvent, LogLine, LogStream};
+    use crate::types::{AppEvent, LogLine, LogStream, RebuildAction};
 
     fn log_line(text: &str) -> LogLine {
         LogLine {
@@ -281,5 +291,31 @@ mod tests {
 
         assert_eq!(app.current_log_scroll(5), 991);
         assert!(!app.follow_logs);
+    }
+
+    #[test]
+    fn tracking_running_actions() {
+        let mut app = App::new();
+        app.hosts = vec!["host-a".to_string()];
+
+        app.apply_event(AppEvent::CommandStarted {
+            host: "host-a".to_string(),
+            action: RebuildAction::Switch,
+            command: "nixos-rebuild switch ...".to_string(),
+        });
+
+        assert!(app.running_actions.contains_key("host-a"));
+        assert_eq!(
+            app.running_actions.get("host-a").unwrap().command,
+            "nixos-rebuild switch ..."
+        );
+
+        app.apply_event(AppEvent::CommandFinished {
+            host: "host-a".to_string(),
+            action: RebuildAction::Switch,
+            success: true,
+        });
+
+        assert!(app.running_actions.is_empty());
     }
 }

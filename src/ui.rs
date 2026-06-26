@@ -229,10 +229,21 @@ fn render_status(f: &mut Frame, app: &App, area: Rect) {
                 .fg(Color::White)
                 .add_modifier(Modifier::BOLD),
         )
+    } else if let Some(ra) = app
+        .selected_host()
+        .and_then(|h| app.running_actions.get(h))
+    {
+        Span::styled(
+            format!(" \u{25CF} Running: {} ", ra.command),
+            Style::default()
+                .bg(Color::Magenta)
+                .fg(Color::White)
+                .add_modifier(Modifier::BOLD),
+        )
     } else if !app.running_actions.is_empty() {
         let running_hosts: Vec<String> = app.running_actions.keys().cloned().collect();
         Span::styled(
-            format!(" \u{25CF} {} ", running_hosts.join(", ")),
+            format!(" \u{25CF} Running on: {} ", running_hosts.join(", ")),
             Style::default()
                 .bg(Color::Magenta)
                 .fg(Color::White)

@@ -42,6 +42,7 @@ pub enum AppEvent {
     CommandStarted {
         host: String,
         action: RebuildAction,
+        command: String,
     },
     CommandFinished {
         host: String,

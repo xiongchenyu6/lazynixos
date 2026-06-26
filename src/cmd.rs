@@ -34,13 +34,6 @@ pub async fn run_rebuild(
     action: RebuildAction,
     tx: mpsc::Sender<AppEvent>,
 ) {
-    let _ = tx
-        .send(AppEvent::CommandStarted {
-            host: host.clone(),
-            action: action.clone(),
-        })
-        .await;
-
     let action_str = match action {
         RebuildAction::Switch => "switch",
         RebuildAction::Build => "build",
@@ -49,6 +42,19 @@ pub async fn run_rebuild(
 
     let flake_arg = format!("{}#{}", flake_dir.display(), host);
     let target_host = format!("root@{}", host);
+
+    let full_command = format!(
+        "nixos-rebuild {} --flake {} --use-substitutes --target-host {} --impure",
+        action_str, flake_arg, target_host
+    );
+
+    let _ = tx
+        .send(AppEvent::CommandStarted {
+            host: host.clone(),
+            action: action.clone(),
+            command: full_command.clone(),
+        })
+        .await;
 
     let mut cmd = Command::new("nixos-rebuild");
     cmd.args([
@@ -132,6 +138,12 @@ pub async fn run_rebuild_cli(
     let action_str = action.to_string();
     let flake_arg = format!("{}#{}", flake_dir.display(), host);
     let target_host = format!("root@{}", host);
+
+    let full_command = format!(
+        "nixos-rebuild {} --flake {} --use-substitutes --target-host {} --impure",
+        action_str, flake_arg, target_host
+    );
+    eprintln!("Running: {}", full_command);
 
     let mut cmd = Command::new("nixos-rebuild");
     cmd.args([
